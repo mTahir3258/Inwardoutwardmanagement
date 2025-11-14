@@ -6,6 +6,7 @@ import 'package:inward_outward_management/providers/customer_provider.dart';
 import 'package:inward_outward_management/providers/material_request_provider.dart';
 import 'package:inward_outward_management/providers/nav_provider.dart';
 import 'package:inward_outward_management/screens/auth/splash_screen.dart';
+import 'package:inward_outward_management/screens/company/dashboard/material_master_screen.dart';
 import 'package:inward_outward_management/screens/company/mainwrapper/company_main_screen.dart';
 import 'package:inward_outward_management/screens/company/material/material_request_screen.dart';
 import 'package:inward_outward_management/screens/customer/customer_dashboard.dart';
@@ -64,6 +65,10 @@ class MyApp extends StatelessWidget {
               '/supplierDashboard': (_) => const SupplierDashboardScreen(),
               '/customerDashboard': (_) => const CustomerDashboardScreen(),
               '/materialRequest': (_) => const MaterialRequestScreen(),
+              // ⚠️ Add these missing routes:
+              '/materials': (_) =>
+                  const MaterialMasterScreen(), // your material master screen
+              '/materialRequests': (_) => const MaterialRequestScreen(), // mate
             },
           );
         },
