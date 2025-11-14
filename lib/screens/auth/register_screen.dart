@@ -19,7 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameCtr = TextEditingController();
   final _emailCtr = TextEditingController();
   final _passwordCtr = TextEditingController();
-  String _role = 'Company';
+  String _role = 'Company'; // default selection
 
   @override
   void dispose() {
@@ -29,30 +29,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Future<void> _submit() async {
-  //   final name = _nameCtr.text.trim();
-  //   final email = _emailCtr.text.trim();
-  //   final password = _passwordCtr.text;
-  //   if (name.isEmpty) return _showSnack('Please enter full name');
-  //   if (!email.contains('@')) return _showSnack('Enter valid email');
-  //   if (password.length < 6)
-  //     return _showSnack('Password must be at least 6 chars');
-  //   final auth = Provider.of<AuthProvider>(context, listen: false);
-  //   final success = await auth.registerWithEmail(
-  //     name: name,
-  //     email: email,
-  //     password: password,
-  //     role: _role,
-  //   );
-  //   if (success) {
-  //     if (!mounted) return;
-  //     // Navigator.of(context).pushReplacementNamed('/home');.
-  //     Navigator.of(context).pushReplacementNamed('/roleRouter');
-  //   } else {
-  //     _showSnack(auth.error ?? 'Registration failed');
-  //   }
-  // }
-
+  /// Submit registration form
+  /// - Basic validation
+  /// - Calls AuthProvider.registerWithEmail which writes Firestore users doc
+  /// - After success fetches cached role and navigates to appropriate dashboard
   Future<void> _submit() async {
     final name = _nameCtr.text.trim();
     final email = _emailCtr.text.trim();
@@ -64,6 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return _showSnack('Password must be at least 6 chars');
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    // call provider to register; provider handles role/companyId caching
     final success = await auth.registerWithEmail(
       name: name,
       email: email,
@@ -71,28 +53,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
       role: _role,
     );
 
-    if (success) {
-      if (!mounted) return;
-
-      // Fetch user role to ensure Firestore write completed
-      final userRole = await auth.fetchUserRole();
-
-      // Navigate to correct dashboard directly
-      switch (userRole?.toLowerCase()) {
-        case 'company':
-          Navigator.of(context).pushReplacementNamed('/companyDashboard');
-          break;
-        case 'supplier':
-          Navigator.of(context).pushReplacementNamed('/supplierDashboard');
-          break;
-        case 'customer':
-          Navigator.of(context).pushReplacementNamed('/customerDashboard');
-          break;
-        default:
-          Navigator.of(context).pushReplacementNamed('/roleRouter');
-      }
-    } else {
+    if (!success) {
       _showSnack(auth.error ?? 'Registration failed');
+      return;
+    }
+
+    // Ensure provider fetched/stored role/companyId
+    // This helps RoleRouter or direct routing to work reliably.
+    await auth.fetchUserRole();
+
+    // Route user to the correct dashboard using cached role
+    final userRole = auth.currentUserRole?.toLowerCase();
+    if (userRole == null) {
+      // fallback to roleRouter if something went wrong
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/roleRouter');
+      return;
+    }
+
+    if (!mounted) return;
+
+    switch (userRole) {
+      case 'company':
+        Navigator.of(context).pushReplacementNamed('/companyDashboard');
+        break;
+      case 'supplier':
+        Navigator.of(context).pushReplacementNamed('/supplierDashboard');
+        break;
+      case 'customer':
+        Navigator.of(context).pushReplacementNamed('/customerDashboard');
+        break;
+      default:
+        Navigator.of(context).pushReplacementNamed('/roleRouter');
     }
   }
 
@@ -158,6 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               SizedBox(height: r.hp(1)),
+              // RoleSelector UI is unchanged; it calls setState on selection
               RoleSelector(
                 selectedRole: _role,
                 onSelected: (val) => setState(() => _role = val),

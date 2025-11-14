@@ -1,6 +1,7 @@
 // lib/screens/role_router.dart
 import 'package:flutter/material.dart';
-import 'package:inward_outward_management/screens/company/company_dashboard.dart';
+import 'package:inward_outward_management/screens/company/dashboard/company_dashboard.dart';
+import 'package:inward_outward_management/screens/company/mainwrapper/company_main_screen.dart';
 import 'package:inward_outward_management/screens/customer/customer_dashboard.dart';
 import 'package:inward_outward_management/screens/supplier/supplier_dashboard.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ class RoleRouterScreen extends StatelessWidget {
         }
 
         final role = snapshot.data;
+        print("Fetched user role: $role");
 
         if (role == null) {
           // If no role found, go to login
@@ -32,7 +34,7 @@ class RoleRouterScreen extends StatelessWidget {
 
         switch (role.toLowerCase()) {
           case 'company':
-            return const CompanyDashboardScreen();
+            return CompanyMainScreen();
           case 'supplier':
             return const SupplierDashboardScreen();
           case 'customer':

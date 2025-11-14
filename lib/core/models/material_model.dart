@@ -1,38 +1,28 @@
 class MaterialModel {
-  String id;
-  String name;
-  String code; // optional short code
-  String unit; // "kg" or "unit" etc.
-  double plasticQty; // plastic qty per item (if applicable)
-  Map<String, dynamic>? metadata; // extensible fields
+  final String? id;
+  final String name;
+  final String unit; // kg, pcs, box etc
+  final double rate;
 
   MaterialModel({
-    required this.id,
+    this.id,
     required this.name,
-    required this.code,
     required this.unit,
-    this.plasticQty = 0.0,
-    this.metadata,
+    required this.rate,
   });
 
-  factory MaterialModel.fromMap(String id, Map<dynamic, dynamic> map) {
-    return MaterialModel(
-      id: id,
-      name: map['name'] ?? '',
-      code: map['code'] ?? '',
-      unit: map['unit'] ?? 'unit',
-      plasticQty: (map['plasticQty'] ?? 0).toDouble(),
-      metadata: map['metadata'] != null
-          ? Map<String, dynamic>.from(map['metadata'])
-          : null,
-    );
+  // Convert to Map (for Firebase)
+  Map<String, dynamic> toMap() {
+    return {'name': name, 'unit': unit, 'rate': rate};
   }
 
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'code': code,
-    'unit': unit,
-    'plasticQty': plasticQty,
-    'metadata': metadata ?? {},
-  };
+  // Convert From Firebase
+  factory MaterialModel.fromMap(Map<String, dynamic> data, String id) {
+    return MaterialModel(
+      id: id,
+      name: data['name'] ?? '',
+      unit: data['unit'] ?? '',
+      rate: (data['rate'] ?? 0).toDouble(),
+    );
+  }
 }

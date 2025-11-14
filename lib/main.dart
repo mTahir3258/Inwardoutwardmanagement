@@ -1,10 +1,13 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:inward_outward_management/providers/company_provider.dart';
 import 'package:inward_outward_management/providers/customer_provider.dart';
+import 'package:inward_outward_management/providers/material_request_provider.dart';
+import 'package:inward_outward_management/providers/nav_provider.dart';
 import 'package:inward_outward_management/screens/auth/splash_screen.dart';
-import 'package:inward_outward_management/screens/company/company_dashboard.dart';
-import 'package:inward_outward_management/screens/company/material_list_screen.dart';
+import 'package:inward_outward_management/screens/company/mainwrapper/company_main_screen.dart';
+import 'package:inward_outward_management/screens/company/material/material_request_screen.dart';
 import 'package:inward_outward_management/screens/customer/customer_dashboard.dart';
 import 'package:inward_outward_management/screens/home/role_router_screen.dart';
 import 'package:inward_outward_management/screens/supplier/supplier_dashboard.dart';
@@ -30,6 +33,20 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SplashProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
+        ChangeNotifierProvider(create: (_) => NavProvider()),
+        ChangeNotifierProvider(create: (_) => MaterialRequestProvider()),
+
+        ChangeNotifierProxyProvider<AuthProvider, CompanyProvider>(
+          create: (_) => CompanyProvider(companyId: ''),
+          update: (_, auth, companyProv) {
+            final cid = auth.currentCompanyId ?? '';
+            companyProv ??= CompanyProvider(companyId: cid);
+            if (cid.isNotEmpty) {
+              companyProv.updateCompanyId(cid);
+            }
+            return companyProv;
+          },
+        ),
       ],
       child: Builder(
         builder: (context) {
@@ -42,12 +59,11 @@ class MyApp extends StatelessWidget {
               '/': (_) => const SplashScreen(),
               '/login': (_) => const LoginScreen(),
               '/register': (_) => const RegisterScreen(),
-              // '/home': (_) => const HomeScreen(),
               '/roleRouter': (_) => const RoleRouterScreen(),
-              '/companyDashboard': (_) => const CompanyDashboardScreen(),
+              '/companyDashboard': (_) => CompanyMainScreen(),
               '/supplierDashboard': (_) => const SupplierDashboardScreen(),
               '/customerDashboard': (_) => const CustomerDashboardScreen(),
-              '/materials': (ctx) => MaterialsListScreen(),
+              '/materialRequest': (_) => const MaterialRequestScreen(),
             },
           );
         },

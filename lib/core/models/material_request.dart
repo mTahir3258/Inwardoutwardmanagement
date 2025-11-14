@@ -1,36 +1,46 @@
+// lib/models/material_request.dart
 class MaterialRequest {
-  String id;
-  String supplierId;
-  String companyId;
-  String status; // requested, confirmed, rejected
-  Map<String, dynamic> items; // materialId -> { qty, unit, remarks }
-  int createdAt;
+  final String id;
+  final String materialName;
+  final int quantity;
+  final double weight; // in kg
+  final String boxType;
+  final String supplierId;
+  final DateTime createdAt;
+  String status; // pending, confirmed, dispatched
 
   MaterialRequest({
     required this.id,
+    required this.materialName,
+    required this.quantity,
+    required this.weight,
+    required this.boxType,
     required this.supplierId,
-    required this.companyId,
-    required this.status,
-    required this.items,
     required this.createdAt,
+    this.status = 'pending',
   });
 
-  factory MaterialRequest.fromMap(String id, Map<dynamic, dynamic> map) {
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'materialName': materialName,
+    'quantity': quantity,
+    'weight': weight,
+    'boxType': boxType,
+    'supplierId': supplierId,
+    'createdAt': createdAt.toIso8601String(),
+    'status': status,
+  };
+
+  factory MaterialRequest.fromMap(Map<String, dynamic> map) {
     return MaterialRequest(
-      id: id,
-      supplierId: map['supplierId'] ?? '',
-      companyId: map['companyId'] ?? '',
-      status: map['status'] ?? 'requested',
-      items: Map<String, dynamic>.from(map['items'] ?? {}),
-      createdAt: map['createdAt'] ?? 0,
+      id: map['id'],
+      materialName: map['materialName'],
+      quantity: map['quantity'],
+      weight: map['weight'],
+      boxType: map['boxType'],
+      supplierId: map['supplierId'],
+      createdAt: DateTime.parse(map['createdAt']),
+      status: map['status'] ?? 'pending',
     );
   }
-
-  Map<String, dynamic> toMap() => {
-    'supplierId': supplierId,
-    'companyId': companyId,
-    'status': status,
-    'items': items,
-    'createdAt': createdAt,
-  };
 }

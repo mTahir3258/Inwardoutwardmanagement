@@ -11,9 +11,12 @@ class AuthProvider extends ChangeNotifier {
   bool loading = false;
   String? error;
 
-  // Cache current user's role (normalized to lowercase)
+  // Cached values for quick access by UI/providers
   String? _currentUserRole;
   String? get currentUserRole => _currentUserRole;
+
+  String? _companyId;
+  String? get currentCompanyId => _companyId;
 
   void _setLoading(bool v) {
     loading = v;
@@ -25,7 +28,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Register user and create Firestore doc (unchanged behavior, but set companyId for companies)
+  /// Register user and create Firestore 'users' doc.
+  /// Role-based logic:
+  ///  - If role == 'company' -> set companyId = uid
+  ///  - Supplier/Customer: role saved; companyId left empty for now
   Future<bool> registerWithEmail({
     required String name,
     required String email,
@@ -37,16 +43,19 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final userCred = await _auth.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
+
       final user = userCred.user;
-      if (user == null)
+      if (user == null) {
         throw FirebaseAuthException(
           code: 'USER_NULL',
           message: 'User is null after registration',
         );
+      }
 
+      // Build AppUser model for Firestore
       final appUser = AppUser(
         uid: user.uid,
         name: name,
@@ -55,17 +64,31 @@ class AuthProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
 
-      // Save map and ensure companyId for company users
+      // Convert to map; add role and companyId if role==company
       final map = appUser.toMap();
-      if ((role).toLowerCase() == 'company') {
-        // Keep companyId same as uid (you can change if you have another id)
+      map['role'] = role; // ensure role exists
+      if (role.trim().toLowerCase() == 'company') {
+        // Use uid as companyId for simple mapping
         map['companyId'] = user.uid;
+      } else {
+        // For supplier/customer we keep companyId empty; later linking can be implemented.
+        map['companyId'] = map['companyId'] ?? '';
       }
 
+      // Write to Firestore users collection
       await _fire.collection('users').doc(user.uid).set(map);
+
+      // Update Firebase display name for convenience
       await user.updateDisplayName(name);
 
+      // Cache role/companyId locally for fast access
+      _currentUserRole = role.trim().toLowerCase();
+      _companyId = (map['companyId']?.toString().isNotEmpty ?? false)
+          ? map['companyId']?.toString()
+          : (role.trim().toLowerCase() == 'company' ? user.uid : null);
+
       _setLoading(false);
+      notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
       _setLoading(false);
@@ -78,8 +101,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign in and return the normalized role string (lowercase) on success,
-  /// or null on failure. Also caches role in `_currentUserRole`.
+  /// Sign in user and cache role + companyId from Firestore users doc.
   Future<String?> signInWithEmail({
     required String email,
     required String password,
@@ -92,7 +114,6 @@ class AuthProvider extends ChangeNotifier {
         email: email.trim(),
         password: password,
       );
-
       final user = userCredential.user;
       if (user == null) {
         _setError('User not found after sign-in');
@@ -100,7 +121,7 @@ class AuthProvider extends ChangeNotifier {
         return null;
       }
 
-      // Fetch Firestore user document
+      // Read Firestore users doc for role/companyId
       final userDoc = await _fire.collection('users').doc(user.uid).get();
       if (!userDoc.exists) {
         _setError('User document not found in Firestore');
@@ -110,18 +131,27 @@ class AuthProvider extends ChangeNotifier {
 
       final data = userDoc.data()!;
       final roleRaw = (data['role'] ?? '').toString();
-
       if (roleRaw.isEmpty) {
         _setError('Role field missing for user');
         _setLoading(false);
         return null;
       }
 
-      // Normalize role to lowercase for consistent comparisons
       final roleNormalized = roleRaw.trim().toLowerCase();
       _currentUserRole = roleNormalized;
+
+      // companyId may be present (for company users) or empty (for supplier/customer)
+      final cid = (data['companyId'] ?? '').toString();
+      if (cid.isNotEmpty) {
+        _companyId = cid;
+      } else {
+        // For company users we can default to uid if not explicitly stored
+        if (roleNormalized == 'company') _companyId = user.uid;
+      }
+
       _setLoading(false);
-      return roleNormalized; // returns e.g. 'company', 'supplier', 'customer'
+      notifyListeners();
+      return roleNormalized;
     } on FirebaseAuthException catch (e) {
       _setLoading(false);
       _setError(e.message ?? 'Login failed');
@@ -135,23 +165,32 @@ class AuthProvider extends ChangeNotifier {
 
   User? get currentUser => _auth.currentUser;
 
+  /// Sign out and clear cached role/company id
   Future<void> signOut() async {
     await _auth.signOut();
     _currentUserRole = null;
+    _companyId = null;
     notifyListeners();
   }
 
+  /// Fetch role/company from Firestore (useful for RoleRouter)
   Future<String?> fetchUserRole() async {
     try {
-      // If we already cached it, return quickly
       if (_currentUserRole != null) return _currentUserRole;
-
       final uid = _auth.currentUser?.uid;
       if (uid == null) return null;
       final doc = await _fire.collection('users').doc(uid).get();
       if (!doc.exists) return null;
+
       final roleRaw = (doc['role'] ?? '').toString();
       _currentUserRole = roleRaw.trim().toLowerCase();
+
+      final cid = (doc['companyId'] ?? '').toString();
+      _companyId = cid.isNotEmpty
+          ? cid
+          : (_currentUserRole == 'company' ? uid : null);
+
+      notifyListeners();
       return _currentUserRole;
     } catch (e) {
       debugPrint('Error fetching user role: $e');
