@@ -102,6 +102,8 @@ class _SupplierRequestsScreenState extends State<SupplierRequestsScreen> {
     final id = req['id']?.toString() ?? '';
     final material = req['materialName']?.toString() ?? '-';
     final qty = req['quantity']?.toString() ?? '-';
+    final unit = req['unit']?.toString() ?? '';
+    final boxes = (req['boxes'] ?? req['weight'])?.toString() ?? '-';
     final weight = req['weight']?.toString() ?? '-';
     final companyId = req['companyId']?.toString() ?? '-';
     final companyName = req['companyName']?.toString() ?? '';
@@ -121,7 +123,7 @@ class _SupplierRequestsScreenState extends State<SupplierRequestsScreen> {
                       materialName: material,
                       companyId: companyId,
                       baseQuantity: qty,
-                      baseWeight: weight,
+                      baseWeight: boxes,
                     ),
                   ),
                 );
@@ -131,7 +133,9 @@ class _SupplierRequestsScreenState extends State<SupplierRequestsScreen> {
           style: const TextStyle(color: AppColors.textLight),
         ),
         subtitle: Text(
-          'Company: ${companyName.isNotEmpty ? companyName : companyId}\nQty: $qty  |  Weight: ${weight}kg',
+          unit.isNotEmpty
+              ? 'Company: ${companyName.isNotEmpty ? companyName : companyId}\nQty: $qty $unit  |  Boxes: $boxes'
+              : 'Company: ${companyName.isNotEmpty ? companyName : companyId}\nQty: $qty  |  Boxes: $boxes',
           style: const TextStyle(color: AppColors.textLight),
         ),
         trailing: Text(

@@ -80,6 +80,8 @@ class CustomerInvoicesScreen extends StatelessWidget {
                         ...docs.map((d) {
                           final data = d.data();
                           final id = d.id;
+                          final invoiceNumber =
+                              data['invoiceNumber']?.toString() ?? id;
                           final materialName =
                               data['materialName']?.toString() ?? 'Material';
                           final amountRaw = data['amount'];
@@ -197,11 +199,17 @@ class CustomerInvoicesScreen extends StatelessWidget {
                                                               ?.toString() ??
                                                           '',
                                                   invoiceId: id,
+                                                  invoiceNumber: invoiceNumber,
                                                   amount: amount,
                                                   materialName: materialName,
                                                   quantity: qty,
                                                   unitName: unitName,
                                                   ratePerUnit: rate,
+                                                  lines: (data['lines'] is List)
+                                                      ? List<dynamic>.from(
+                                                          data['lines'] as List,
+                                                        )
+                                                      : null,
                                                 ),
                                               ),
                                             );

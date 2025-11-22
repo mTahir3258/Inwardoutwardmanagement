@@ -7,21 +7,25 @@ import 'package:inward_outward_management/widgets/primary_button.dart';
 class CustomerPaymentScreen extends StatelessWidget {
   final String customerName;
   final String invoiceId;
+  final String invoiceNumber;
   final double amount;
   final String materialName;
   final double quantity;
   final String unitName;
   final double ratePerUnit;
+  final List<dynamic>? lines;
 
   const CustomerPaymentScreen({
     super.key,
     required this.customerName,
     required this.invoiceId,
+    required this.invoiceNumber,
     required this.amount,
     required this.materialName,
     required this.quantity,
     required this.unitName,
     required this.ratePerUnit,
+    this.lines,
   });
 
   @override
@@ -55,7 +59,7 @@ class CustomerPaymentScreen extends StatelessWidget {
                     ),
                     SizedBox(height: r.hp(1.5)),
                     Text(
-                      'Invoice #$invoiceId',
+                      'Invoice #$invoiceNumber',
                       style: TextStyle(
                         color: AppColors.textLight.withOpacity(0.8),
                         fontSize: r.sp(11),
@@ -79,49 +83,123 @@ class CustomerPaymentScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: r.hp(2)),
-                    Container(
-                      padding: EdgeInsets.all(r.wp(3)),
-                      decoration: BoxDecoration(
-                        color: AppColors.greyBackground,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    if (lines != null && lines!.isNotEmpty)
+                      Column(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  materialName,
-                                  style: TextStyle(
-                                    color: AppColors.textLight,
-                                    fontSize: r.sp(13),
-                                    fontWeight: FontWeight.w600,
+                          ...lines!.map((raw) {
+                            final Map<String, dynamic> l =
+                                (raw is Map<String, dynamic>) ? raw : {};
+                            final lineMaterialName =
+                                l['materialName']?.toString() ?? materialName;
+                            final lineUnitName =
+                                l['unitName']?.toString() ?? unitName;
+                            final qtyRaw = l['quantity'];
+                            final lineQty = (qtyRaw is num)
+                                ? qtyRaw.toDouble()
+                                : double.tryParse('$qtyRaw') ?? 0.0;
+                            final rateRaw = l['ratePerUnit'];
+                            final lineRate = (rateRaw is num)
+                                ? rateRaw.toDouble()
+                                : double.tryParse('$rateRaw') ?? 0.0;
+                            final amtRaw = l['amount'];
+                            final lineAmt = (amtRaw is num)
+                                ? amtRaw.toDouble()
+                                : double.tryParse('$amtRaw') ?? 0.0;
+
+                            return Container(
+                              margin: EdgeInsets.only(bottom: r.hp(0.8)),
+                              padding: EdgeInsets.all(r.wp(3)),
+                              decoration: BoxDecoration(
+                                color: AppColors.greyBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          lineMaterialName,
+                                          style: TextStyle(
+                                            color: AppColors.textLight,
+                                            fontSize: r.sp(13),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(height: r.hp(0.4)),
+                                        Text(
+                                          '${lineQty.toStringAsFixed(2)} $lineUnitName @ ₹ ${lineRate.toStringAsFixed(2)}/$lineUnitName',
+                                          style: TextStyle(
+                                            color: AppColors.textLight
+                                                .withOpacity(0.8),
+                                            fontSize: r.sp(10),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: r.hp(0.4)),
-                                Text(
-                                  '${quantity.toStringAsFixed(2)} $unitName @ ₹ ${ratePerUnit.toStringAsFixed(2)}/$unitName',
-                                  style: TextStyle(
-                                    color: AppColors.textLight.withOpacity(0.8),
-                                    fontSize: r.sp(10),
+                                  Text(
+                                    '₹ ${lineAmt.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: AppColors.textLight,
+                                      fontSize: r.sp(13),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '₹ ${amount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: AppColors.textLight,
-                              fontSize: r.sp(13),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ],
+                      )
+                    else
+                      Container(
+                        padding: EdgeInsets.all(r.wp(3)),
+                        decoration: BoxDecoration(
+                          color: AppColors.greyBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    materialName,
+                                    style: TextStyle(
+                                      color: AppColors.textLight,
+                                      fontSize: r.sp(13),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(height: r.hp(0.4)),
+                                  Text(
+                                    '${quantity.toStringAsFixed(2)} $unitName @ ₹ ${ratePerUnit.toStringAsFixed(2)}/$unitName',
+                                    style: TextStyle(
+                                      color: AppColors.textLight
+                                          .withOpacity(0.8),
+                                      fontSize: r.sp(10),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '₹ ${amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: AppColors.textLight,
+                                fontSize: r.sp(13),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     SizedBox(height: r.hp(2.5)),
                     Text(
                       'Payment Options',

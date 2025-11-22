@@ -5,7 +5,7 @@ import 'package:inward_outward_management/screens/company/advanced_recieptscreen
 import 'package:inward_outward_management/screens/company/lot/lot_listscreen.dart';
 import 'package:inward_outward_management/screens/company/box/box_list_screen.dart';
 import 'package:inward_outward_management/screens/company/inventory_screen.dart';
-import 'package:inward_outward_management/screens/company/create_bill_screen.dart';
+import 'package:inward_outward_management/screens/company/material_billing_screen.dart';
 import 'package:inward_outward_management/screens/company/inward_history_screen.dart';
 import 'package:inward_outward_management/screens/company/open_challanScreen.dart';
 import 'package:inward_outward_management/screens/company/pending_billsscreen.dart';
@@ -519,7 +519,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
           label: 'Create Bill',
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CreateBillScreen()),
+              MaterialPageRoute(builder: (_) => const MaterialBillingScreen()),
             );
           },
         ),

@@ -99,12 +99,7 @@ class InventoryScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => MaterialBillingScreen(
-                                materialName: materialName,
-                                unitName: unitName,
-                                totalQuantity: total,
-                                intimationId: intimationId.isEmpty ? null : intimationId,
-                              ),
+                              builder: (_) => const MaterialBillingScreen(),
                             ),
                           );
                         },
