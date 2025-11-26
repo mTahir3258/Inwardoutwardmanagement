@@ -420,7 +420,7 @@ class _SubmitWithoutRequestScreenState
                                 final unitLabel =
                                     _selectedUnitName?.trim().isNotEmpty == true
                                         ? _selectedUnitName!.trim()
-                                        : 'kg';
+                                        : '';
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [

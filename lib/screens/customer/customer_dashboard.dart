@@ -6,6 +6,10 @@ import 'package:inward_outward_management/utils/app_colors.dart';
 import 'package:inward_outward_management/utils/responsive.dart';
 import 'package:inward_outward_management/widgets/app_scaffold.dart';
 import 'package:inward_outward_management/screens/customer/customer_invoices_screen.dart';
+import 'package:inward_outward_management/screens/customer/customer_new_invoice_screen.dart';
+import 'package:inward_outward_management/screens/customer/customer_products_screen.dart';
+import 'package:inward_outward_management/screens/customer/customer_history_screen.dart';
+import 'package:inward_outward_management/screens/customer/customer_settings_screen.dart';
 import 'package:provider/provider.dart';
 
 class CustomerDashboardScreen extends StatefulWidget {
@@ -42,6 +46,196 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
         authProvider.currentUser?.email ??
         'Customer';
 
+    // Tabs for bottom navigation
+    final List<Widget> tabs = [
+      // Dashboard tab (existing content)
+      SafeArea(
+        child: Consumer<CustomerProvider>(
+          builder: (context, cp, _) {
+            return RefreshIndicator(
+              onRefresh: () => cp.fetchDashboardStats(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: r.wp(4),
+                  vertical: r.hp(1),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 600;
+                    final cardWidth =
+                        isNarrow ? double.infinity : (constraints.maxWidth - 48) / 2;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(r.wp(4)),
+                          decoration: BoxDecoration(
+                            color: AppColors.greyBackground,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor:
+                                        AppColors.primaryGreen.withOpacity(0.15),
+                                    child: const Icon(
+                                      Icons.person_outline,
+                                      color: AppColors.primaryGreen,
+                                    ),
+                                  ),
+                                  SizedBox(width: r.wp(2.5)),
+                                  Text(
+                                    'Hello, $userName',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: r.sp(16),
+                                      color: AppColors.textLight,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    onPressed: () {},
+                                    icon: const Icon(
+                                      Icons.notifications_outlined,
+                                      color: AppColors.textLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: r.hp(1.5)),
+                              Wrap(
+                                spacing: r.wp(2.5),
+                                runSpacing: r.hp(1.5),
+                                children: [
+                                  SizedBox(
+                                    width: cardWidth,
+                                    child: _metricCard(
+                                      titleTop: '${cp.invoicesDue}',
+                                      subtitle: 'Invoices Due',
+                                      icon: Icons.receipt_long_outlined,
+                                      iconBg: Colors.blue.shade100,
+                                      isLoading: cp.loading,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CustomerInvoicesScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: cardWidth,
+                                    child: _metricCard(
+                                      titleTop:
+                                          '₹${_formatAmount(cp.pendingPayments)}',
+                                      subtitle: 'Pending Payments',
+                                      icon: Icons.account_balance_wallet_outlined,
+                                      iconBg: Colors.amber.shade100,
+                                      isLoading: cp.loading,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CustomerInvoicesScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: cardWidth,
+                                    child: _metricCard(
+                                      titleTop:
+                                          '${cp.billingHistoryCount > 0 ? "View" : 0}',
+                                      subtitle: 'Billing History',
+                                      icon: Icons.history_rounded,
+                                      iconBg: Colors.pink.shade100,
+                                      isLoading: cp.loading,
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CustomerInvoicesScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: r.hp(2)),
+                        Text(
+                          'Quick Access',
+                          style: TextStyle(
+                            fontSize: r.sp(14),
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                        SizedBox(height: r.hp(1.2)),
+                        _quickAccessItem(
+                          context,
+                          icon: Icons.add_circle_outline,
+                          title: 'Generate New Invoice',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const CustomerNewInvoiceScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _quickAccessItem(
+                          context,
+                          icon: Icons.history_toggle_off,
+                          title: 'View Billing History',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const CustomerHistoryScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _quickAccessItem(
+                          context,
+                          icon: Icons.receipt_long_outlined,
+                          title: 'View Invoices',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const CustomerInvoicesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: r.hp(4)),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      const CustomerProductsScreen(),
+      const CustomerHistoryScreen(),
+      const CustomerSettingsScreen(),
+    ];
+
     return AppScaffold(
       title: 'Customer Dashboard',
       actions: [
@@ -57,185 +251,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
       ],
       body: Column(
         children: [
-          Expanded(
-            child: SafeArea(
-              child: Consumer<CustomerProvider>(
-                builder: (context, cp, _) {
-                  return RefreshIndicator(
-                    onRefresh: () => cp.fetchDashboardStats(),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: r.wp(4),
-                        vertical: r.hp(1),
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isNarrow = constraints.maxWidth < 600;
-                          // card width for two-column look on larger screens
-                          final cardWidth = isNarrow
-                              ? double.infinity
-                              : (constraints.maxWidth - 48) / 2;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Top card with user icon and metrics (dark theme)
-                              Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(r.wp(4)),
-                                decoration: BoxDecoration(
-                                  color: AppColors.greyBackground,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 22,
-                                          backgroundColor: AppColors
-                                              .primaryGreen
-                                              .withOpacity(0.15),
-                                          child: const Icon(
-                                            Icons.person_outline,
-                                            color: AppColors.primaryGreen,
-                                          ),
-                                        ),
-                                        SizedBox(width: r.wp(2.5)),
-                                        Text(
-                                          'Hello, $userName',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: r.sp(16),
-                                            color: AppColors.textLight,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        IconButton(
-                                          onPressed: () {},
-                                          icon: const Icon(
-                                            Icons.notifications_outlined,
-                                            color: AppColors.textLight,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: r.hp(1.5)),
-                                    Wrap(
-                                      spacing: r.wp(2.5),
-                                      runSpacing: r.hp(1.5),
-                                      children: [
-                                        SizedBox(
-                                          width: cardWidth,
-                                          child: _metricCard(
-                                            titleTop: '${cp.invoicesDue}',
-                                            subtitle: 'Invoices Due',
-                                            icon: Icons.receipt_long_outlined,
-                                            iconBg: Colors.blue.shade100,
-                                            isLoading: cp.loading,
-                                            onTap: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      const CustomerInvoicesScreen(),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: cardWidth,
-                                          child: _metricCard(
-                                            titleTop:
-                                                '₹${_formatAmount(cp.pendingPayments)}',
-                                            subtitle: 'Pending Payments',
-                                            icon:
-                                                Icons.account_balance_wallet_outlined,
-                                            iconBg: Colors.amber.shade100,
-                                            isLoading: cp.loading,
-                                            onTap: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      const CustomerInvoicesScreen(),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: cardWidth,
-                                          child: _metricCard(
-                                            titleTop:
-                                                '${cp.billingHistoryCount > 0 ? "View" : 0}',
-                                            subtitle: 'Billing History',
-                                            icon: Icons.history_rounded,
-                                            iconBg: Colors.pink.shade100,
-                                            isLoading: cp.loading,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(height: r.hp(2)),
-
-                              Text(
-                                'Quick Access',
-                                style: TextStyle(
-                                  fontSize: r.sp(14),
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textLight,
-                                ),
-                              ),
-                              SizedBox(height: r.hp(1.2)),
-
-                              _quickAccessItem(
-                                context,
-                                icon: Icons.add_circle_outline,
-                                title: 'Generate New Invoice',
-                                onTap: () {
-                                  // navigate to invoice creation
-                                  // Navigator.push(context, MaterialPageRoute(builder: (_) => CreateInvoiceScreen()));
-                                },
-                              ),
-                              _quickAccessItem(
-                                context,
-                                icon: Icons.history_toggle_off,
-                                title: 'View Billing History',
-                                onTap: () {
-                                  // navigate to billing history
-                                },
-                              ),
-                              _quickAccessItem(
-                                context,
-                                icon: Icons.receipt_long_outlined,
-                                title: 'View Invoices',
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const CustomerInvoicesScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-
-                              SizedBox(height: r.hp(4)),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+          Expanded(child: tabs[_currentIndex]),
           Container(
             color: AppColors.greyBackground,
             child: BottomNavigationBar(
@@ -246,7 +262,6 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
               unselectedItemColor: Colors.grey,
               onTap: (index) {
                 setState(() => _currentIndex = index);
-                // implement navigation to other tabs (Products, History, Settings)
               },
               items: const [
                 BottomNavigationBarItem(

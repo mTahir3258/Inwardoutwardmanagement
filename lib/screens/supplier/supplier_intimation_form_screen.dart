@@ -37,7 +37,7 @@ class _Entry {
   double get result {
     final v1 = double.tryParse(val1.text.trim()) ?? 0.0;
     final v2 = double.tryParse(val2.text.trim()) ?? 0.0;
-    return v1 - v2;
+    return v1 + v2;
   }
 
   void dispose() {
@@ -78,8 +78,6 @@ class _SupplierIntimationFormScreenState
   void _syncRowsWithBoxCount(int count) {
     while (_entries.length < count) {
       final entry = _Entry();
-      entry.val1.addListener(_updateTotal);
-      entry.val2.addListener(_updateTotal);
       _entries.add(entry);
     }
     while (_entries.length > count) {
@@ -87,7 +85,6 @@ class _SupplierIntimationFormScreenState
       _entries.removeLast();
     }
     setState(() {});
-    _updateTotal();
   }
 
   void _onBoxCountChanged() {
@@ -97,8 +94,6 @@ class _SupplierIntimationFormScreenState
       final add = count - _entries.length;
       for (int i = 0; i < add; i++) {
         final entry = _Entry();
-        entry.val1.addListener(_updateTotal);
-        entry.val2.addListener(_updateTotal);
         _entries.add(entry);
       }
     } else if (count < _entries.length) {
@@ -109,7 +104,6 @@ class _SupplierIntimationFormScreenState
       }
     }
     setState(() {});
-    _updateTotal();
   }
 
   void _removeEntry(int index) {
@@ -119,15 +113,10 @@ class _SupplierIntimationFormScreenState
       _boxController.removeListener(_onBoxCountChanged);
       _boxController.text = _entries.length.toString();
       _boxController.addListener(_onBoxCountChanged);
-      _updateTotal();
     });
   }
 
   double get _totalResult => _entries.fold(0.0, (sum, e) => sum + e.result);
-
-  void _updateTotal() {
-    _unitController.text = _totalResult.toStringAsFixed(1);
-  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;

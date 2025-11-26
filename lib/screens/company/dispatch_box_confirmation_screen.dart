@@ -6,86 +6,61 @@ import 'package:inward_outward_management/widgets/app_scaffold.dart';
 import 'package:inward_outward_management/widgets/primary_button.dart';
 import 'package:provider/provider.dart';
 
-class StandaloneBoxConfirmationScreen extends StatefulWidget {
+class DispatchBoxConfirmationScreen extends StatefulWidget {
+  final String requestId;
   final Map<String, dynamic> intimation;
+  final String? materialName;
 
-  const StandaloneBoxConfirmationScreen({
+  const DispatchBoxConfirmationScreen({
     super.key,
+    required this.requestId,
     required this.intimation,
+    this.materialName,
   });
 
   @override
-  State<StandaloneBoxConfirmationScreen> createState() =>
-      _StandaloneBoxConfirmationScreenState();
+  State<DispatchBoxConfirmationScreen> createState() =>
+      _DispatchBoxConfirmationScreenState();
 }
 
-class _StandaloneBoxConfirmationScreenState
-    extends State<StandaloneBoxConfirmationScreen> {
-  static const int _maxBoxes = 100;
-  late final int _boxes;
+class _DispatchBoxConfirmationScreenState
+    extends State<DispatchBoxConfirmationScreen> {
+  late final List<MapEntry<String, Map<String, dynamic>>> _boxes;
   late List<bool> _confirmed;
-  late final List<double> _boxValues;
   bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
-    final boxesVal = widget.intimation['boxes'];
-    final boxes = boxesVal is num
-        ? boxesVal.toInt()
-        : int.tryParse(boxesVal?.toString() ?? '') ?? 0;
-    var normalized = boxes > 0 ? boxes : 0;
-    if (normalized > _maxBoxes) {
-      normalized = _maxBoxes;
-    }
-    _boxes = normalized;
-
-    // Load per-box values from intimation (if present)
-    final dynamic rawBoxValues = widget.intimation['boxValues'];
-    if (rawBoxValues is List) {
-      _boxValues = rawBoxValues
-          .map((v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0.0)
-          .toList();
+    final rawItems = widget.intimation['items'];
+    Map<String, dynamic> itemsMap;
+    if (rawItems is Map<String, dynamic>) {
+      itemsMap = rawItems;
     } else {
-      _boxValues = List<double>.filled(_boxes, 0.0);
+      itemsMap = {};
     }
-
-    // Ensure lists have consistent length
-    if (_boxValues.length < _boxes) {
-      _boxValues.addAll(
-        List<double>.filled(_boxes - _boxValues.length, 0.0),
-      );
-    } else if (_boxValues.length > _boxes && _boxes > 0) {
-      _boxValues.removeRange(_boxes, _boxValues.length);
-    }
-
-    _confirmed = List<bool>.filled(_boxes, false);
+    final entries = itemsMap.entries
+        .map((e) => MapEntry(e.key.toString(), Map<String, dynamic>.from(e.value ?? {})))
+        .toList();
+    entries.sort((a, b) => a.key.compareTo(b.key));
+    _boxes = entries;
+    _confirmed = List<bool>.filled(_boxes.length, false);
   }
 
   Future<void> _confirm() async {
     if (_submitting) return;
     setState(() => _submitting = true);
-
     try {
       final prov = Provider.of<CompanyProvider>(context, listen: false);
-      final companyId = prov.companyId;
-      final intimationId = widget.intimation['id']?.toString() ?? '';
-      if (companyId.isEmpty || intimationId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Missing company or intimation id')),
-        );
-        setState(() => _submitting = false);
-        return;
-      }
-
-      await prov.updateStandaloneIntimationStatusOnly(
-        intimationId: intimationId,
-        status: 'confirmed',
+      final challanId = await prov.confirmIntimationAndCreateChallan(
+        widget.requestId,
+        widget.intimation,
       );
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Standalone intimation confirmed')),
+        SnackBar(
+          content: Text('Challan created successfully (ID: $challanId)'),
+        ),
       );
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -103,14 +78,30 @@ class _StandaloneBoxConfirmationScreenState
   @override
   Widget build(BuildContext context) {
     final r = Responsive(context);
+    final supplierId = widget.intimation['supplierId']?.toString() ?? '-';
     final supplierName = widget.intimation['supplierName']?.toString() ?? '';
-    final materialName = widget.intimation['materialName']?.toString() ?? '';
-    final unitName = widget.intimation['unitName']?.toString() ?? '';
-    final totalVal = (widget.intimation['entriesTotalWeight'] ??
-        widget.intimation['totalWeightField']);
-    final total = totalVal?.toString();
-    final totalUnits =
-        _boxValues.fold<double>(0, (sum, v) => sum + (v.isFinite ? v : 0));
+    final displaySupplier =
+        supplierName.isNotEmpty ? supplierName : supplierId;
+    final materialName =
+        widget.intimation['materialName']?.toString() ?? widget.materialName ?? '';
+    final unitName = (widget.intimation['unit'] ??
+            widget.intimation['unitName'] ??
+            '')
+        .toString();
+    final totalUnit = widget.intimation['totalUnit'] ??
+        widget.intimation['entriesTotalWeight'] ??
+        widget.intimation['totalWeightField'];
+    final totalBox = widget.intimation['totalBox'] ??
+        widget.intimation['boxes'];
+
+    final totalUnits = _boxes.fold<double>(
+      0,
+      (sum, e) {
+        final v = e.value;
+        final raw = (v['weight'] ?? v['materialKg'] ?? v['qty'] ?? 0) as num;
+        return sum + raw.toDouble();
+      },
+    );
 
     return AppScaffold(
       title: 'Box Confirmation',
@@ -120,7 +111,6 @@ class _StandaloneBoxConfirmationScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header card
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(r.wp(3)),
@@ -145,7 +135,7 @@ class _StandaloneBoxConfirmationScreenState
                               ),
                             ),
                             Text(
-                              supplierName,
+                              displaySupplier,
                               style: TextStyle(
                                 color: AppColors.textLight,
                                 fontSize: r.sp(12),
@@ -211,8 +201,8 @@ class _StandaloneBoxConfirmationScreenState
                               ),
                             ),
                             Text(
-                              total != null
-                                  ? '$total ${unitName.isNotEmpty ? unitName : ''}'
+                              totalUnit != null
+                                  ? '${totalUnit.toString()} ${unitName.isNotEmpty ? unitName : ''}'
                                   : '-',
                               style: TextStyle(
                                 color: AppColors.textLight,
@@ -228,8 +218,6 @@ class _StandaloneBoxConfirmationScreenState
                 ),
               ),
               SizedBox(height: r.hp(2)),
-
-              // Boxes list
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -242,7 +230,7 @@ class _StandaloneBoxConfirmationScreenState
                     ),
                   ),
                   Text(
-                    'Total: $_boxes',
+                    'Total: ${totalBox ?? _boxes.length}',
                     style: TextStyle(
                       color: AppColors.textLight,
                       fontSize: r.sp(11),
@@ -258,12 +246,15 @@ class _StandaloneBoxConfirmationScreenState
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ListView.builder(
-                    itemCount: _boxes,
+                    itemCount: _boxes.length,
                     itemBuilder: (context, index) {
-                      final label = 'Box ${index + 1}';
-                      final value = index < _boxValues.length
-                          ? _boxValues[index]
-                          : 0.0;
+                      final entry = _boxes[index];
+                      final label =
+                          entry.key.isNotEmpty ? entry.key : 'Box ${index + 1}';
+                      final v = entry.value;
+                      final raw =
+                          (v['weight'] ?? v['materialKg'] ?? v['qty'] ?? 0) as num;
+                      final value = raw.toDouble();
                       final checked = _confirmed[index];
                       return ListTile(
                         leading: const Icon(
@@ -305,14 +296,12 @@ class _StandaloneBoxConfirmationScreenState
                 ),
               ),
               SizedBox(height: r.hp(1.5)),
-
-              // Bottom summary: total boxes and total units
               Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
                   padding: EdgeInsets.only(bottom: r.hp(0.5)),
                   child: Text(
-                    'Total boxes: $_boxes, Total unit: ${totalUnits.toStringAsFixed(1)} ${unitName.isNotEmpty ? unitName : ''}',
+                    'Total boxes: ${totalBox ?? _boxes.length}, Total unit: ${totalUnits.toStringAsFixed(1)} ${unitName.isNotEmpty ? unitName : ''}',
                     style: TextStyle(
                       color: AppColors.textLight,
                       fontSize: r.sp(11),
@@ -321,7 +310,6 @@ class _StandaloneBoxConfirmationScreenState
                   ),
                 ),
               ),
-
               PrimaryButton(
                 label: 'Confirm',
                 loading: _submitting,

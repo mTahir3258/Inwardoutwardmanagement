@@ -16,6 +16,7 @@ class MaterialRequestScreen extends StatefulWidget {
 }
 
 class _MaterialRequestScreenState extends State<MaterialRequestScreen> {
+  static const int _maxBoxes = 100;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController weightController = TextEditingController();
@@ -177,9 +178,19 @@ class _MaterialRequestScreenState extends State<MaterialRequestScreen> {
                             label: '',
                             hint: 'Enter total Box',
                             isNumber: true,
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Required'
-                                : null,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Required';
+                              }
+                              final n = int.tryParse(v.trim());
+                              if (n == null) {
+                                return 'Invalid number';
+                              }
+                              if (n > _maxBoxes) {
+                                return 'Maximum allowed boxes is $_maxBoxes';
+                              }
+                              return null;
+                            },
                           ),
                           SizedBox(height: r.hp(1.8)),
                           Text(

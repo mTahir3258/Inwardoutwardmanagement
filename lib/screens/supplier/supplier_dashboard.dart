@@ -7,6 +7,8 @@ import 'package:inward_outward_management/widgets/app_scaffold.dart';
 import 'package:inward_outward_management/screens/supplier/supplier_requests_screen.dart';
 import 'package:inward_outward_management/screens/supplier/supplier_challan_status_screen.dart';
 import 'package:inward_outward_management/screens/supplier/submit_without_request_screen.dart';
+import 'package:inward_outward_management/screens/supplier/supplier_history_screen.dart';
+import 'package:inward_outward_management/screens/supplier/supplier_settings_screen.dart';
 import 'package:provider/provider.dart';
 
 class SupplierDashboardScreen extends StatefulWidget {
@@ -26,6 +28,18 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     final user = authProvider.currentUser;
     final r = Responsive(context);
 
+    // Tabs for bottom navigation
+    final List<Widget> tabs = [
+      _buildDashboardContent(
+        context,
+        r,
+        user?.email ?? 'Supplier',
+      ),
+      const SupplierChallanStatusScreen(),
+      const SupplierHistoryScreen(),
+      const SupplierSettingsScreen(),
+    ];
+
     return AppScaffold(
       title: 'Supplier Dashboard',
       actions: [
@@ -42,11 +56,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _buildDashboardContent(
-              context,
-              r,
-              user?.email ?? 'Supplier',
-            ),
+            child: tabs[_currentIndex],
           ),
           Container(
             color: AppColors.greyBackground,
@@ -145,7 +155,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       child: _buildMetricCard(
                         icon: Icons.inventory_2_outlined,
                         color: Colors.blue.shade100,
-                        value: "12",
+                        value: "0",
                         label: "Outstanding Material\nRequests",
                       ),
                     ),
@@ -153,7 +163,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       child: _buildMetricCard(
                         icon: Icons.local_shipping_outlined,
                         color: Colors.amber.shade100,
-                        value: "5",
+                        value: "0",
                         label: "Pending Dispatch\nIntimations",
                       ),
                     ),
@@ -166,7 +176,7 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
                       child: _buildMetricCard(
                         icon: Icons.receipt_long_outlined,
                         color: Colors.red.shade100,
-                        value: "8",
+                        value: "0",
                         label: "Unpaid Challans",
                       ),
                     ),
@@ -244,41 +254,65 @@ class _SupplierDashboardScreenState extends State<SupplierDashboardScreen> {
     required String value,
     required String label,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.greyBackground),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: color,
-            radius: 18,
-            child: Icon(icon, color: AppColors.textDark, size: 20),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textLight,
+    return GestureDetector(
+      onTap: () {
+        // Simple routing based on label text
+        if (label.startsWith('Outstanding')) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SupplierRequestsScreen(),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textLight,
-              height: 1.3,
+          );
+        } else if (label.startsWith('Pending Dispatch')) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SupplierRequestsScreen(),
             ),
-          ),
-        ],
+          );
+        } else if (label.startsWith('Unpaid Challans')) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SupplierChallanStatusScreen(),
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primaryDark,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.greyBackground),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: color,
+              radius: 18,
+              child: Icon(icon, color: AppColors.textDark, size: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textLight,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textLight,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

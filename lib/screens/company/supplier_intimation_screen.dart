@@ -3,7 +3,7 @@ import 'package:inward_outward_management/providers/company_provider.dart';
 import 'package:inward_outward_management/utils/app_colors.dart';
 import 'package:inward_outward_management/utils/responsive.dart';
 import 'package:inward_outward_management/widgets/app_scaffold.dart';
-import 'package:inward_outward_management/widgets/primary_button.dart';
+import 'package:inward_outward_management/screens/company/dispatch_box_confirmation_screen.dart';
 import 'package:provider/provider.dart';
 
 class SupplierIntimationScreen extends StatefulWidget {
@@ -85,100 +85,61 @@ class _SupplierIntimationScreenState extends State<SupplierIntimationScreen> {
     return Card(
       color: AppColors.greyBackground,
       margin: EdgeInsets.only(bottom: r.hp(1.2)),
-      child: Padding(
-        padding: EdgeInsets.all(r.wp(3)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Supplier: ${supplierName.isNotEmpty ? supplierName : supplierId}',
-              style: const TextStyle(color: AppColors.textLight),
-            ),
-            SizedBox(height: r.hp(0.6)),
-            if (items is Map<String, dynamic>) ...[
-              Text(
-                'Items:',
-                style: TextStyle(
-                  color: AppColors.textLight,
-                  fontSize: r.sp(11),
-                  fontWeight: FontWeight.bold,
-                ),
+      child: InkWell(
+        onTap: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => DispatchBoxConfirmationScreen(
+                requestId: widget.requestId,
+                intimation: intimation,
+                materialName: widget.materialName,
               ),
-              SizedBox(height: r.hp(0.4)),
-              ...items.entries.map((entry) {
-                final key = entry.key.toString();
-                final value = Map<String, dynamic>.from(entry.value ?? {});
-                final qty = value['qty'] ?? '-';
-                final rate = value['rate'] ?? '-';
-                final materialKg = value['materialKg'] ?? '-';
-                final plasticKg = value['plasticKg'] ?? '-';
-                final totalCost = value['totalCost'] ?? '-';
-                return Padding(
-                  padding: EdgeInsets.only(bottom: r.hp(0.4)),
-                  child: Text(
-                    '$key: qty $qty, rate $rate, materialKg $materialKg, plasticKg $plasticKg, total $totalCost',
-                    style: TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: r.sp(10),
-                    ),
-                  ),
-                );
-              }),
-            ],
-            SizedBox(height: r.hp(0.6)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+            ),
+          );
+          if (result == true) {
+            await _loadIntimations();
+          }
+        },
+        child: Padding(
+          padding: EdgeInsets.all(r.wp(3)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Supplier: ${supplierName.isNotEmpty ? supplierName : supplierId}',
+                style: const TextStyle(color: AppColors.textLight),
+              ),
+              SizedBox(height: r.hp(0.6)),
+              if (items is Map<String, dynamic>) ...[
                 Text(
-                  'Status: $status',
-                  style: const TextStyle(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.bold,
+                  'Tap to view ${items.length} boxes',
+                  style: TextStyle(
+                    color: AppColors.textLight,
+                    fontSize: r.sp(11),
                   ),
                 ),
               ],
-            ),
-            if (status != 'confirmed') ...[
-              SizedBox(height: r.hp(1.2)),
-              PrimaryButton(
-                label: 'Confirm & Create Challan',
-                onTap: () {
-                  _handleConfirmDispatchIntimation(intimation);
-                },
+              SizedBox(height: r.hp(0.6)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Status: $status',
+                    style: const TextStyle(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textLight,
+                  ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
-  }
-
-  Future<void> _handleConfirmDispatchIntimation(
-    Map<String, dynamic> intimation,
-  ) async {
-    final prov = Provider.of<CompanyProvider>(
-      context,
-      listen: false,
-    );
-    try {
-      final challanId = await prov.confirmIntimationAndCreateChallan(
-        widget.requestId,
-        intimation,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Challan created successfully (ID: $challanId)',
-          ),
-        ),
-      );
-      await _loadIntimations();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
-    }
   }
 }
